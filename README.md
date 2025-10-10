@@ -7,7 +7,7 @@ Dieses Projekt misst regelmäßig die Netzwerk-Latenz (Ping) und die Download-Ge
 - **Ping-Logger:** Misst Latenz und Paketverlust, schreibt CSV und Prometheus-Metriken.
 - **Speed-Logger:** Misst Download-Geschwindigkeit, schreibt CSV und Prometheus-Metriken.
 - **Prometheus:** Sammelt die Metriken automatisch.
-- **Grafana:** Visualisiert die Daten aus CSV und Prometheus.
+- **Grafana:** Visualisiert die Daten aus Prometheus.
 - **Flexible Konfiguration:** Über `config.yaml` (Intervalle als `3h`, `60min`, `3600s` etc.)
 
 ## Schnellstart
