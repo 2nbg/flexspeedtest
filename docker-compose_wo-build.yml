@@ -1,0 +1,51 @@
+version: "3.9"
+services:
+  ping-logger:
+    image: 2nbg/ping-logger:latest
+    container_name: bwt_ping_logger
+    volumes:
+      - ./data:/data
+      - ./config.yaml:/usr/local/bin/config.yaml
+    restart: unless-stopped
+
+  speed-logger:
+    image: 2nbg/speed-logger:latest
+    container_name: bwt_speed_logger
+    volumes:
+      - ./data:/data
+      - ./config.yaml:/usr/local/bin/config.yaml
+    restart: unless-stopped
+
+  grafana:
+    image: grafana/grafana:12.2.0
+    container_name: bwt_grafana2
+    ports:
+      - "3010:3000"
+    volumes:
+      - ./data:/var/lib/grafana/data
+      - ./grafana/provisioning:/etc/grafana/provisioning
+      - grafana-storage:/var/lib/grafana
+    environment:
+      - GF_AUTH_ANONYMOUS_ENABLED=true
+      - GF_AUTH_ANONYMOUS_ORG_ROLE=Admin
+      - GF_SECURITY_ADMIN_USER=
+      - GF_SECURITY_ADMIN_PASSWORD=
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    restart: unless-stopped
+
+  prometheus:
+    image: prom/prometheus:latest
+    container_name: bwt_prometheus
+    volumes:
+      - ./prometheus.yml:/etc/prometheus/prometheus.yml
+      - prometheus-data:/prometheus 
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+    ports:
+      - "9090:9090"
+    restart: unless-stopped
+
+volumes:
+  grafana-storage:
+  prometheus-data:

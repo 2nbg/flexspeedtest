@@ -28,6 +28,7 @@ jobs:
           context: ./docker_speedlogger
           file: ./docker_speedlogger/Dockerfile
           push: true
+          platforms: linux/amd64,linux/arm64
           tags: ${{ secrets.DOCKERHUB_USERNAME }}/speed-logger:latest
 
       - name: Build and push Pinglogger Docker image
@@ -36,6 +37,7 @@ jobs:
           context: ./docker_pinglogger
           file: ./docker_pinglogger/Dockerfile
           push: true
+          platforms: linux/amd64,linux/arm64
           tags: ${{ secrets.DOCKERHUB_USERNAME }}/ping-logger:latest
 
     # steps:
