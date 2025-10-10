@@ -1,0 +1,7 @@
+scrape_configs:
+  - job_name: 'speed_logger'
+    static_configs:
+      - targets: ['speed-logger:8001']
+  - job_name: 'ping_logger'
+    static_configs:
+      - targets: ['ping-logger:8002']

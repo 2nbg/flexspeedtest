@@ -1,0 +1,4 @@
+speed_logger:
+  host: www.google.com/robots.txt
+  interval_seconds: 10
+  logfile: ./data/speed_stats.csv

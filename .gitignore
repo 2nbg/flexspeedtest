@@ -1,0 +1,14 @@
+# Python Bytecode
+__pycache__/
+*.pyc
+
+# Daten und Logfiles
+/data/
+*.csv
+
+# VS Code Arbeitsbereich
+.vscode/
+
+# Sonstige temporäre Dateien
+*.log
+*.tmp
