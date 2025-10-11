@@ -8,11 +8,14 @@ import os
 import datetime
 import yaml
 import threading
+import fcntl
 from http.server import BaseHTTPRequestHandler, HTTPServer
 
+# Standardwerte
 HOST = "www.google.com/robots.txt"
 INTERVAL = 20
 LOGFILE = "./data/speed_stats.csv"
+LOCKFILE = "/tmp/nettest.lock"
 
 def run_speedtest(host):
     try:
@@ -63,50 +66,66 @@ def start_metrics_server(port=8001):
     thread = threading.Thread(target=server.serve_forever, daemon=True)
     thread.start()
 
+def acquire_fcntl_lock():
+    lock_fd = open(LOCKFILE, "w")
+    fcntl.flock(lock_fd, fcntl.LOCK_EX)
+    return lock_fd
+
+def release_fcntl_lock(lock_fd):
+    fcntl.flock(lock_fd, fcntl.LOCK_UN)
+    lock_fd.close()
+
 if __name__ == "__main__":
 
     if len(sys.argv) > 1 and (sys.argv[1] == "--help" or sys.argv[1] == "-h"):
-        print("Usage: speed_logger.py [host] [interval_seconds] [output_file]")
+        print("Usage: speed_logger.py [host] [interval_seconds] [output_file] [lockfile]")
         sys.exit(1)
 
     elif os.path.exists("./config.yaml") is True:
         with open("./config.yaml") as f:
             config = yaml.safe_load(f)["speed_logger"]
-            host = config.get("host", HOST)
-            interval = config.get("interval_seconds", INTERVAL)
-            logfile = config.get("logfile", LOGFILE)
+            HOST = config.get("host", HOST)
+            INTERVAL = config.get("interval_seconds", INTERVAL)
+            LOGFILE = config.get("logfile", LOGFILE)
+            LOCKFILE = config.get("lockfile", LOCKFILE)
     
     else:
-        host = sys.argv[1] if len(sys.argv) > 1 else HOST
-        interval = int(sys.argv[2]) if len(sys.argv) > 2 else INTERVAL
-        logfile = sys.argv[3] if len(sys.argv) > 3 else LOGFILE
+        HOST = sys.argv[1] if len(sys.argv) > 1 else HOST
+        INTERVAL = int(sys.argv[2]) if len(sys.argv) > 2 else INTERVAL
+        LOGFILE = sys.argv[3] if len(sys.argv) > 3 else LOGFILE
+        LOCKFILE = sys.argv[4] if len(sys.argv) > 4 else LOCKFILE
 
-    os.makedirs(os.path.dirname(os.path.abspath(logfile)), exist_ok=True)
+    os.makedirs(os.path.dirname(os.path.abspath(LOGFILE)), exist_ok=True)
+    os.makedirs(os.path.dirname(os.path.abspath(LOCKFILE)), exist_ok=True)
 
-    file_exists = os.path.isfile(logfile)
+    file_exists = os.path.isfile(LOGFILE)
 
     # Starte Prometheus-Metrics-Server im Hintergrund
     start_metrics_server(port=8001)
-
-    with open(logfile, "a", newline="") as csvfile:
+    
+    with open(LOGFILE, "a", newline="") as csvfile:
         writer = csv.writer(csvfile)
         if not file_exists:
             writer.writerow(["timestamp_unix", "timestamp_iso", "speed_bps", "host"])
 
         while True:
             start_time = time.time()
+             
+            lock_fd = acquire_fcntl_lock()
+            try:
+                speed = run_speedtest(HOST)
+                ts_unix = int(time.time())
+                ts_iso = datetime.datetime.now(datetime.timezone.utc).isoformat()
 
-            speed = run_speedtest(host)
-            ts_unix = int(time.time())
-            ts_iso = datetime.datetime.now(datetime.timezone.utc).isoformat()
-            
-            writer.writerow([ts_unix, ts_iso, speed, host])
-            csvfile.flush()
+                writer.writerow([ts_unix, ts_iso, speed, HOST])
+                csvfile.flush()
 
-            # Werte für Prometheus bereitstellen
-            last_speed = speed
-            last_timestamp = ts_unix
+                # Werte für Prometheus bereitstellen
+                last_speed = speed
+                last_timestamp = ts_unix
+            finally:
+                release_fcntl_lock(lock_fd)
 
             elapsed = time.time() - start_time
-            sleep_time = max(0, interval - elapsed)
+            sleep_time = max(0, INTERVAL - elapsed)
             time.sleep(sleep_time)

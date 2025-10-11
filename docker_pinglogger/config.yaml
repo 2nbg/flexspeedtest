@@ -4,3 +4,4 @@ ping_logger:
   stats_interval_seconds: 600
   logfile: ./data/ping_results.csv
   statsfile: ./data/ping_stats.csv
+  lockfile: ./lock/nettest.lock 

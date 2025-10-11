@@ -8,13 +8,16 @@ import os
 import datetime
 import yaml
 import threading
+import fcntl
 from http.server import BaseHTTPRequestHandler, HTTPServer
 
+# Standardwerte
 HOST = "www.google.com"
 INTERVAL = 5
 STATS_INTERVAL = 600
 LOGFILE = "./data/speed_stats.csv"
 STATSFILE = "./data/ping_stats.csv"
+LOCKFILE = "/tmp/nettest.lock"  
 
 # Globale Variablen für Prometheus
 global last_loss, last_min, last_max, last_avg, last_timestamp
@@ -75,10 +78,19 @@ def start_metrics_server(port=8002):
     thread = threading.Thread(target=server.serve_forever, daemon=True)
     thread.start()
 
+def acquire_fcntl_lock():
+    lock_fd = open(LOCKFILE, "w")
+    fcntl.flock(lock_fd, fcntl.LOCK_EX)
+    return lock_fd
+
+def release_fcntl_lock(lock_fd):
+    fcntl.flock(lock_fd, fcntl.LOCK_UN)
+    lock_fd.close()
+
 if __name__ == "__main__":
                 
     if len(sys.argv) > 1 and (sys.argv[1] == "--help" or sys.argv[1] == "-h"):
-        print("Usage: ping_logger.py [host] [interval_seconds] [stats_interval_seconds] [logfile] [statsfile]")
+        print("Usage: ping_logger.py [host] [interval_seconds] [stats_interval_seconds] [logfile] [statsfile] [lockfile]")
         sys.exit(1)
 
     elif os.path.exists("./config.yaml") is True:
@@ -89,6 +101,7 @@ if __name__ == "__main__":
             STATS_INTERVAL = config.get("stats_interval_seconds", STATS_INTERVAL)
             LOGFILE = config.get("logfile", LOGFILE)
             STATSFILE = config.get("statsfile", STATSFILE)
+            LOCKFILE = config.get("lockfile", LOCKFILE)   
 
     else:
         HOST = sys.argv[1] if len(sys.argv) > 1 else HOST
@@ -96,9 +109,11 @@ if __name__ == "__main__":
         STATS_INTERVAL = int(sys.argv[3]) if len(sys.argv) > 3 else STATS_INTERVAL
         LOGFILE = sys.argv[4] if len(sys.argv) > 4 else LOGFILE
         STATSFILE = sys.argv[5] if len(sys.argv) > 5 else STATSFILE
+        LOCKFILE = sys.argv[6] if len(sys.argv) > 6 else LOCKFILE  
 
     os.makedirs(os.path.dirname(os.path.abspath(LOGFILE)), exist_ok=True)
     os.makedirs(os.path.dirname(os.path.abspath(STATSFILE)), exist_ok=True)
+    os.makedirs(os.path.dirname(os.path.abspath(LOCKFILE)), exist_ok=True)
 
     logfile_exists = os.path.isfile(LOGFILE)
     statsfile_exists = os.path.isfile(STATSFILE)
@@ -123,17 +138,26 @@ if __name__ == "__main__":
                 ts_iso = datetime.datetime.now(datetime.timezone.utc).isoformat()
 
                 while time.time() - start_stats < STATS_INTERVAL:
-                    start_ping = time.time()
 
-                    latency = run_ping(HOST)
-                    ts_unix = int(time.time())
-                    ts_iso = datetime.datetime.now(datetime.timezone.utc).isoformat()
-                    logwriter.writerow([ts_unix, ts_iso, HOST, latency if latency else -1])
-                    if latency is not None:
-                        latencies.append(latency)
-                    else:
-                        losses += 1
-                    logfile.flush()
+                    # Lock für den Zugriff auf die Logdateien erwerben
+                    lock_fd = acquire_fcntl_lock()
+                    try:
+                        # Hier können Sie den Code zum Schreiben in die Logdateien einfügen
+                        start_ping = time.time()
+
+                        latency = run_ping(HOST)
+                        ts_unix = int(time.time())
+                        ts_iso = datetime.datetime.now(datetime.timezone.utc).isoformat()
+                        logwriter.writerow([ts_unix, ts_iso, HOST, latency if latency else -1])
+                        if latency is not None:
+                            latencies.append(latency)
+                        else:
+                            losses += 1
+                        logfile.flush()
+                        
+                    finally:
+                        # Lock immer wieder freigeben
+                        release_fcntl_lock(lock_fd)
 
                     elapsed = time.time() - start_ping
                     sleep_time = max(0, INTERVAL - elapsed)
