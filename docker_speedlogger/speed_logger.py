@@ -9,7 +9,7 @@ import datetime
 import yaml
 import threading
 from http.server import BaseHTTPRequestHandler, HTTPServer
-from filelock import FileLock  # <--- NEU
+from filelock import SoftFileLock  # <--- NEU
 
 # Standardwerte
 HOST = "www.google.com/robots.txt"
@@ -67,7 +67,7 @@ def start_metrics_server(port=8001):
     thread.start()
 
 def acquire_file_lock():
-    lock = FileLock(LOCKFILE)
+    lock = SoftFileLock(LOCKFILE, thread_local=False)  
     lock.acquire()
     return lock
 
@@ -75,7 +75,7 @@ def release_file_lock(lock):
     lock.release()
 
 if __name__ == "__main__":
-    time.sleep(10)  # Warte 10 Sekunden nach dem Start
+    #time.sleep(10)  # Warte 10 Sekunden nach dem Start
     if len(sys.argv) > 1 and (sys.argv[1] == "--help" or sys.argv[1] == "-h"):
         print("Usage: speed_logger.py [host] [interval_seconds] [output_file] [lockfile]")
         sys.exit(1)

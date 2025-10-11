@@ -9,7 +9,7 @@ import datetime
 import yaml
 import threading
 from http.server import BaseHTTPRequestHandler, HTTPServer
-from filelock import FileLock 
+from filelock import SoftFileLock 
 
 # Standardwerte
 HOST = "www.google.com"
@@ -79,7 +79,7 @@ def start_metrics_server(port=8002):
     thread.start()
 
 def acquire_file_lock():
-    lock = FileLock(LOCKFILE)
+    lock = SoftFileLock(LOCKFILE, thread_local=False)
     lock.acquire()
     return lock
 
