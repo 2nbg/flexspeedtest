@@ -8,8 +8,8 @@ import os
 import datetime
 import yaml
 import threading
-import fcntl
 from http.server import BaseHTTPRequestHandler, HTTPServer
+from filelock import FileLock 
 
 # Standardwerte
 HOST = "www.google.com"
@@ -78,17 +78,16 @@ def start_metrics_server(port=8002):
     thread = threading.Thread(target=server.serve_forever, daemon=True)
     thread.start()
 
-def acquire_fcntl_lock():
-    lock_fd = open(LOCKFILE, "w")
-    fcntl.flock(lock_fd, fcntl.LOCK_EX)
-    return lock_fd
+def acquire_file_lock():
+    lock = FileLock(LOCKFILE)
+    lock.acquire()
+    return lock
 
-def release_fcntl_lock(lock_fd):
-    fcntl.flock(lock_fd, fcntl.LOCK_UN)
-    lock_fd.close()
+def release_file_lock(lock):
+    lock.release()
 
 if __name__ == "__main__":
-                
+    print("1")           
     if len(sys.argv) > 1 and (sys.argv[1] == "--help" or sys.argv[1] == "-h"):
         print("Usage: ping_logger.py [host] [interval_seconds] [stats_interval_seconds] [logfile] [statsfile] [lockfile]")
         sys.exit(1)
@@ -110,14 +109,14 @@ if __name__ == "__main__":
         LOGFILE = sys.argv[4] if len(sys.argv) > 4 else LOGFILE
         STATSFILE = sys.argv[5] if len(sys.argv) > 5 else STATSFILE
         LOCKFILE = sys.argv[6] if len(sys.argv) > 6 else LOCKFILE  
-
+    print("2")     
     os.makedirs(os.path.dirname(os.path.abspath(LOGFILE)), exist_ok=True)
     os.makedirs(os.path.dirname(os.path.abspath(STATSFILE)), exist_ok=True)
     os.makedirs(os.path.dirname(os.path.abspath(LOCKFILE)), exist_ok=True)
 
     logfile_exists = os.path.isfile(LOGFILE)
     statsfile_exists = os.path.isfile(STATSFILE)
-
+    print("3")
     with open(LOGFILE, "a", newline="") as logfile:
         with open(STATSFILE, "a", newline="") as statsfile:
             logwriter = csv.writer(logfile)
@@ -129,7 +128,7 @@ if __name__ == "__main__":
                 statswriter.writerow(["timestamp_unix", "timestamp_iso", "host", "stat_min_ms", "stat_max_ms", "stat_avg_ms", "stat_loss_percent"])
             
             start_metrics_server()
-
+            print("4")
             while True:
                 start_stats = time.time()
                 losses = 0
@@ -140,7 +139,7 @@ if __name__ == "__main__":
                 while time.time() - start_stats < STATS_INTERVAL:
 
                     # Lock für den Zugriff auf die Logdateien erwerben
-                    lock_fd = acquire_fcntl_lock()
+                    lock = acquire_file_lock()
                     try:
                         # Hier können Sie den Code zum Schreiben in die Logdateien einfügen
                         start_ping = time.time()
@@ -157,7 +156,7 @@ if __name__ == "__main__":
                         
                     finally:
                         # Lock immer wieder freigeben
-                        release_fcntl_lock(lock_fd)
+                        release_file_lock(lock)
 
                     elapsed = time.time() - start_ping
                     sleep_time = max(0, INTERVAL - elapsed)

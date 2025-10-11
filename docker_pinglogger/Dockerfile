@@ -5,7 +5,7 @@ RUN apt-get update && apt-get install -y \
     iputils-ping \
     python3 \
     python3-pip \
-    && pip3 install pyyaml \
+    && pip3 install pyyaml filelock\
     && rm -rf /var/lib/apt/lists/*
 
 COPY config.yaml /usr/local/bin/config.yaml
@@ -15,3 +15,6 @@ RUN chmod +x /usr/local/bin/ping_logger.py
 WORKDIR /usr/local/bin
 
 ENTRYPOINT [ "python3", "/usr/local/bin/ping_logger.py" ]
+
+#docker run --rm -v $(pwd)/data:/usr/local/bin/data -v $(pwd)/lock:/usr/local/bin/lock ping_logger
+#docker build -t ping_logger .

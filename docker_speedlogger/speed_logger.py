@@ -8,8 +8,8 @@ import os
 import datetime
 import yaml
 import threading
-import fcntl
 from http.server import BaseHTTPRequestHandler, HTTPServer
+from filelock import FileLock  # <--- NEU
 
 # Standardwerte
 HOST = "www.google.com/robots.txt"
@@ -66,17 +66,16 @@ def start_metrics_server(port=8001):
     thread = threading.Thread(target=server.serve_forever, daemon=True)
     thread.start()
 
-def acquire_fcntl_lock():
-    lock_fd = open(LOCKFILE, "w")
-    fcntl.flock(lock_fd, fcntl.LOCK_EX)
-    return lock_fd
+def acquire_file_lock():
+    lock = FileLock(LOCKFILE)
+    lock.acquire()
+    return lock
 
-def release_fcntl_lock(lock_fd):
-    fcntl.flock(lock_fd, fcntl.LOCK_UN)
-    lock_fd.close()
+def release_file_lock(lock):
+    lock.release()
 
 if __name__ == "__main__":
-
+    time.sleep(10)  # Warte 10 Sekunden nach dem Start
     if len(sys.argv) > 1 and (sys.argv[1] == "--help" or sys.argv[1] == "-h"):
         print("Usage: speed_logger.py [host] [interval_seconds] [output_file] [lockfile]")
         sys.exit(1)
@@ -111,7 +110,7 @@ if __name__ == "__main__":
         while True:
             start_time = time.time()
              
-            lock_fd = acquire_fcntl_lock()
+            lock = acquire_file_lock()
             try:
                 speed = run_speedtest(HOST)
                 ts_unix = int(time.time())
@@ -124,7 +123,7 @@ if __name__ == "__main__":
                 last_speed = speed
                 last_timestamp = ts_unix
             finally:
-                release_fcntl_lock(lock_fd)
+                release_file_lock(lock)
 
             elapsed = time.time() - start_time
             sleep_time = max(0, INTERVAL - elapsed)
