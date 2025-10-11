@@ -12,3 +12,6 @@ __pycache__/
 # Sonstige temporäre Dateien
 *.log
 *.tmp
+
+#sondere Dateien
+.DS_Store
