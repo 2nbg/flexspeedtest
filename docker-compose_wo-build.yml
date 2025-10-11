@@ -6,6 +6,7 @@ services:
     volumes:
       - ./data:/data
       - ./config.yaml:/usr/local/bin/config.yaml
+      - ./lock:/lock
     restart: unless-stopped
 
   speed-logger:
@@ -14,6 +15,7 @@ services:
     volumes:
       - ./data:/data
       - ./config.yaml:/usr/local/bin/config.yaml
+      - ./lock:/lock
     restart: unless-stopped
 
   grafana:
