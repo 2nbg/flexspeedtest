@@ -2,7 +2,7 @@ version: "3.9"
 services:
   ping-logger:
     build: ./docker_pinglogger/.
-    container_name: bwt_ping_logger
+    container_name: fst_ping_logger
     volumes:
       - ./data:/data
       - ./config.yaml:/usr/local/bin/config.yaml
@@ -11,7 +11,7 @@ services:
 
   speed-logger:
     build: ./docker_speedlogger/.
-    container_name: bwt_speed_logger
+    container_name: fst_speed_logger
     volumes:
       - ./data:/data
       - ./config.yaml:/usr/local/bin/config.yaml
@@ -20,7 +20,7 @@ services:
 
   grafana:
     image: grafana/grafana:12.2.0
-    container_name: bwt_grafana2
+    container_name: fst_grafana
     ports:
       - "3010:3000"
     volumes:
@@ -38,12 +38,15 @@ services:
 
   prometheus:
     image: prom/prometheus:latest
-    container_name: bwt_prometheus
+    container_name: fst_prometheus
     volumes:
       - ./prometheus.yml:/etc/prometheus/prometheus.yml
       - prometheus-data:/prometheus 
     command:
       - '--config.file=/etc/prometheus/prometheus.yml'
+      #- '--storage.tsdb.path=/prometheus'
+      - '--storage.tsdb.retention.time=90d'
+      - '--storage.tsdb.retention.size=100MB'
     ports:
       - "9090:9090"
     restart: unless-stopped
@@ -52,7 +55,7 @@ volumes:
   grafana-storage:
   prometheus-data: 
 
-#docker-compose stop
+#docker compose stop
 #docker-compose rm -f
 #docker-compose pull   
 #docker-compose up -d
