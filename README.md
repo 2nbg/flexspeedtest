@@ -1,4 +1,4 @@
-# Bandwidthtest – Netzwerk- und Speed-Logger mit Docker, Prometheus & Grafana
+# FlexSpeedTest: Ping- und Speed-Logger mit Docker, Prometheus & Grafana
 
 Dieses Projekt misst regelmäßig die Netzwerk-Latenz (Ping) und die Download-Geschwindigkeit (Speedtest) zu konfigurierbaren Hosts. Die Ergebnisse werden als CSV-Dateien gespeichert, als Prometheus-Metriken bereitgestellt und können in Grafana visualisiert werden.
 
