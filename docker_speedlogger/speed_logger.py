@@ -137,7 +137,7 @@ def release_file_lock(lock):
 if __name__ == "__main__":
     #time.sleep(10)  # Warte 10 Sekunden nach dem Start
     if len(sys.argv) > 1 and (sys.argv[1] == "--help" or sys.argv[1] == "-h"):
-        print("Usage: speed_logger.py [host] [interval_seconds] [output_file] [lockfile]")
+        print("Usage: speed_logger.py [host] [interval] [output_file] [lockfile]")
         sys.exit(1)
 
     elif os.path.exists("./config.yaml") is True:
@@ -145,7 +145,7 @@ if __name__ == "__main__":
             config = yaml.safe_load(f)["speed_logger"]
             HOST = config.get("host", HOST)
             try:
-                INTERVAL = parse_interval(config.get("interval_seconds", INTERVAL))
+                INTERVAL = parse_interval(config.get("interval", config.get("interval_seconds", INTERVAL)))
             except Exception:
                 # Fallback auf bisherigen Wert
                 INTERVAL = float(INTERVAL)

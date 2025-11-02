@@ -148,7 +148,7 @@ def release_file_lock(lock):
 if __name__ == "__main__":
     print("1")           
     if len(sys.argv) > 1 and (sys.argv[1] == "--help" or sys.argv[1] == "-h"):
-        print("Usage: ping_logger.py [host] [interval_seconds] [stats_interval_seconds] [logfile] [statsfile] [lockfile]")
+        print("Usage: ping_logger.py [host] [interval] [stats_interval] [logfile] [statsfile] [lockfile]")
         sys.exit(1)
 
     elif os.path.exists("./config.yaml") is True:
@@ -156,11 +156,12 @@ if __name__ == "__main__":
             config = yaml.safe_load(f)["ping_logger"]
             HOST = config.get("host", HOST)
             try:
-                INTERVAL = parse_interval(config.get("interval_seconds", INTERVAL))
+                INTERVAL = parse_interval(config.get("interval", config.get("interval_seconds", INTERVAL)))
             except Exception:
                 INTERVAL = float(INTERVAL)
             try:
-                STATS_INTERVAL = parse_interval(config.get("stats_interval_seconds", STATS_INTERVAL))
+                # bevorzugt neues Feld 'stats_interval', fallback auf altes 'stats_interval_seconds'
+                STATS_INTERVAL = parse_interval(config.get("stats_interval", config.get("stats_interval_seconds", STATS_INTERVAL)))
             except Exception:
                 STATS_INTERVAL = float(STATS_INTERVAL)
             LOGFILE = config.get("logfile", LOGFILE)

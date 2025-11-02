@@ -1,7 +1,7 @@
 ping_logger:
   host: google.com
-  interval_seconds: 5
-  stats_interval_seconds: 600
+  interval: 5s
+  stats_interval: 1m
   logfile: ./data/ping_results.csv
   statsfile: ./data/ping_stats.csv
   lockfile: ./lock/nettest.lock 

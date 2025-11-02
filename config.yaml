@@ -1,13 +1,13 @@
 ping_logger:
   host: google.com
-  interval_seconds: 5
-  stats_interval_seconds: 600
+  interval: 5s
+  stats_interval: 10m
   logfile: /data/ping_results.csv
   statsfile: /data/ping_stats.csv
   lockfile: /lock/nettest.lock
 
 speed_logger:
   host: https://cdimage.debian.org/debian-cd/current/amd64/iso-cd/debian-13.1.0-amd64-netinst.iso
-  interval_seconds: 10800
+  interval: 3h
   logfile: /data/speed_stats.csv
   lockfile: /lock/nettest.lock

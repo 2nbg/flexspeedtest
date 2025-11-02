@@ -5,6 +5,7 @@ __pycache__/
 # Daten und Logfiles
 /data/
 *.csv
+*/data/
 
 # VS Code Arbeitsbereich
 .vscode/
@@ -13,7 +14,10 @@ __pycache__/
 *.log
 *.tmp
 
-#sondere Dateien
-.DS_Store
+# Lockfiles
 *.lock
 /lock/
+*/lock/
+
+# Sonstige Dateien
+.DS_Store
