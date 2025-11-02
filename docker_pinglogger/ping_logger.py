@@ -19,6 +19,65 @@ LOGFILE = "./data/speed_stats.csv"
 STATSFILE = "./data/ping_stats.csv"
 LOCKFILE = "/tmp/nettest.lock"  
 
+# Hilfsfunktion: Intervalle wie "3h", "60min", "3600s", "1.5h" parsen
+def parse_interval(value, default_unit="s"):
+    """Wandelt Angaben wie 10, "30s", "5m", "2h", "1.5h" in Sekunden (float) um.
+
+    Erlaubte Einheiten (Groß-/Kleinschreibung egal):
+    - Sekunden: s, sec, secs, second, seconds
+    - Minuten: m, min, mins, minute, minutes
+    - Stunden: h, hr, hrs, hour, hours
+    - Tage: d, day, days
+    - Wochen: w, week, weeks
+
+    Fällt keine Einheit an, wird default_unit (Standard: Sekunden) verwendet.
+    """
+    if isinstance(value, (int, float)):
+        return float(value)
+    if not isinstance(value, str):
+        raise ValueError(f"Unsupported interval type: {type(value)}")
+
+    text = value.strip().lower()
+    m = re.fullmatch(r"\s*(\d+(?:\.\d+)?)\s*([a-z]+)?\s*", text)
+    if not m:
+        raise ValueError(f"Invalid interval format: {value}")
+    amount = float(m.group(1))
+    unit = (m.group(2) or default_unit).lower()
+
+    unit_map = {
+        # Sekunden
+        "s": 1,
+        "sec": 1,
+        "secs": 1,
+        "second": 1,
+        "seconds": 1,
+        # Minuten
+        "m": 60,
+        "min": 60,
+        "mins": 60,
+        "minute": 60,
+        "minutes": 60,
+        # Stunden
+        "h": 3600,
+        "hr": 3600,
+        "hrs": 3600,
+        "hour": 3600,
+        "hours": 3600,
+        # Tage
+        "d": 86400,
+        "day": 86400,
+        "days": 86400,
+        # Wochen
+        "w": 604800,
+        "week": 604800,
+        "weeks": 604800,
+    }
+
+    if unit not in unit_map:
+        raise ValueError(f"Unknown interval unit: {unit}")
+
+    return amount * unit_map[unit]
+
 # Globale Variablen für Prometheus
 global last_loss, last_min, last_max, last_avg, last_timestamp
 last_loss = None
@@ -96,16 +155,30 @@ if __name__ == "__main__":
         with open("./config.yaml") as f:
             config = yaml.safe_load(f)["ping_logger"]
             HOST = config.get("host", HOST)
-            INTERVAL = config.get("interval_seconds", INTERVAL)
-            STATS_INTERVAL = config.get("stats_interval_seconds", STATS_INTERVAL)
+            try:
+                INTERVAL = parse_interval(config.get("interval_seconds", INTERVAL))
+            except Exception:
+                INTERVAL = float(INTERVAL)
+            try:
+                STATS_INTERVAL = parse_interval(config.get("stats_interval_seconds", STATS_INTERVAL))
+            except Exception:
+                STATS_INTERVAL = float(STATS_INTERVAL)
             LOGFILE = config.get("logfile", LOGFILE)
             STATSFILE = config.get("statsfile", STATSFILE)
             LOCKFILE = config.get("lockfile", LOCKFILE)   
 
     else:
         HOST = sys.argv[1] if len(sys.argv) > 1 else HOST
-        INTERVAL = int(sys.argv[2]) if len(sys.argv) > 2 else INTERVAL
-        STATS_INTERVAL = int(sys.argv[3]) if len(sys.argv) > 3 else STATS_INTERVAL
+        if len(sys.argv) > 2:
+            try:
+                INTERVAL = parse_interval(sys.argv[2])
+            except Exception:
+                INTERVAL = float(INTERVAL)
+        if len(sys.argv) > 3:
+            try:
+                STATS_INTERVAL = parse_interval(sys.argv[3])
+            except Exception:
+                STATS_INTERVAL = float(STATS_INTERVAL)
         LOGFILE = sys.argv[4] if len(sys.argv) > 4 else LOGFILE
         STATSFILE = sys.argv[5] if len(sys.argv) > 5 else STATSFILE
         LOCKFILE = sys.argv[6] if len(sys.argv) > 6 else LOCKFILE  

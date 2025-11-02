@@ -1,5 +1,5 @@
 import unittest
-from speed_logger import run_speedtest
+from speed_logger import run_speedtest, parse_interval
 import threading
 import http.server
 import socketserver
@@ -40,6 +40,27 @@ class TestSpeedLogger(unittest.TestCase):
         host = "https://invalid.host.example"
         speed = run_speedtest(host)
         self.assertIsNone(speed)
+
+    def test_parse_interval_seconds(self):
+        self.assertAlmostEqual(parse_interval(30), 30.0)
+        self.assertAlmostEqual(parse_interval("30"), 30.0)
+        self.assertAlmostEqual(parse_interval("3600s"), 3600.0)
+
+    def test_parse_interval_minutes(self):
+        self.assertAlmostEqual(parse_interval("60min"), 3600.0)
+        self.assertAlmostEqual(parse_interval("2m"), 120.0)
+
+    def test_parse_interval_hours(self):
+        self.assertAlmostEqual(parse_interval("1h"), 3600.0)
+        self.assertAlmostEqual(parse_interval("1.5h"), 5400.0)
+
+    def test_parse_interval_days_weeks(self):
+        self.assertAlmostEqual(parse_interval("1d"), 86400.0)
+        self.assertAlmostEqual(parse_interval("1w"), 604800.0)
+
+    def test_parse_interval_invalid(self):
+        with self.assertRaises(ValueError):
+            parse_interval("abc")
 
 if __name__ == "__main__":
     unittest.main()
